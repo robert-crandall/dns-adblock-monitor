@@ -11,7 +11,8 @@ import (
 
 type Config struct {
 	Hosts       []string
-	ExpectedIPs []string
+	BlockingIPs []string
+	Resolver    string
 }
 
 func loadConfig() Config {
@@ -20,15 +21,18 @@ func loadConfig() Config {
 		log.Fatal("DNS_HOSTS environment variable is required")
 	}
 
-	expectedIPsEnv := os.Getenv("EXPECTED_IP_RESOLUTIONS")
-	var expectedIPs []string
-	if expectedIPsEnv != "" {
-		expectedIPs = strings.Split(expectedIPsEnv, ",")
+	blockingIPsEnv := os.Getenv("EXPECTED_IP_RESOLUTIONS")
+	var blockingIPs []string
+	if blockingIPsEnv != "" {
+		blockingIPs = strings.Split(blockingIPsEnv, ",")
 	}
+
+	resolverEnv := os.Getenv("DNS_RESOLVER")
 
 	return Config{
 		Hosts:       strings.Split(hostsEnv, ","),
-		ExpectedIPs: expectedIPs,
+		BlockingIPs: blockingIPs,
+		Resolver:    resolverEnv,
 	}
 }
 
@@ -36,7 +40,7 @@ func main() {
 	config := loadConfig()
 
 	// Make the config available to handlers
-	handlers.Initialize(config.Hosts, config.ExpectedIPs...)
+	handlers.Initialize(config.Hosts, config.BlockingIPs, config.Resolver)
 
 	http.HandleFunc("/", handlers.CheckHandler)
 	log.Printf("Starting server on :8080 with hosts: %v", config.Hosts)
