@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net"
 	"net/http"
 	"sync"
+	"time"
 )
 
 // HostStatus represents the resolution status of a single host
@@ -25,24 +27,41 @@ type CheckResponse struct {
 type Config struct {
 	Hosts       []string
 	BlockingIPs []string
+	Resolver    string
 }
 
 var (
-	config Config
-	mu     sync.RWMutex
+	config   Config
+	resolver *net.Resolver
+	mu       sync.RWMutex
 )
 
 // Initialize sets up the handlers package with configuration
-func Initialize(hosts []string, blockingIPs ...string) {
+func Initialize(hosts []string, blockingIPs []string, dnsResolver string) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	config.Hosts = hosts
+
 	if len(blockingIPs) > 0 {
 		config.BlockingIPs = blockingIPs
 	} else {
 		// Default blocking IPs if none provided
 		config.BlockingIPs = []string{"0.0.0.0", "127.0.0.1"}
+	}
+
+	if dnsResolver != "" {
+		resolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{
+					Timeout: time.Second * 10,
+				}
+				return d.DialContext(ctx, "udp", dnsResolver)
+			},
+		}
+	} else {
+		resolver = net.DefaultResolver
 	}
 }
 
@@ -61,7 +80,7 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 			Host: host,
 		}
 
-		ips, err := net.LookupHost(host)
+		ips, err := resolver.LookupHost(context.Background(), host)
 		if err != nil {
 			status.Error = err.Error()
 			status.IsBlocked = true
@@ -75,8 +94,8 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 		// Check if all returned IPs are blocking IPs
 		for _, ip := range ips {
 			isBlocking := false
-			for _, blockingIP := range config.BlockingIPs {
-				if ip == blockingIP {
+			for _, expectedIP := range config.BlockingIPs {
+				if ip == expectedIP {
 					isBlocking = true
 					break
 				}
