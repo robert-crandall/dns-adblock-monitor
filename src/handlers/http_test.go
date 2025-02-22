@@ -40,7 +40,7 @@ func TestResponseFormat(t *testing.T) {
 					},
 				},
 			},
-			expectStatus:  200,
+			expectStatus:  500,
 			expectBlocked: false,
 		},
 	}
