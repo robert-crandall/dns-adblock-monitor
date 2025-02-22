@@ -84,6 +84,12 @@ func isIPv6Blocked(ip string) bool {
 		return false
 	}
 
+	// Ensure we're using the full IPv6 representation
+	parsedIP = parsedIP.To16()
+	if parsedIP == nil {
+		return false
+	}
+
 	for _, network := range config.BlockingIPv6 {
 		if network.Contains(parsedIP) {
 			return true
@@ -99,6 +105,14 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := CheckResponse{
 		Hosts: make([]HostStatus, 0, len(config.Hosts)),
+	}
+
+	// Add blocking ranges to response
+	for _, network := range config.BlockingIPv4 {
+		response.BlockingRanges.IPv4 = append(response.BlockingRanges.IPv4, network.String())
+	}
+	for _, network := range config.BlockingIPv6 {
+		response.BlockingRanges.IPv6 = append(response.BlockingRanges.IPv6, network.String())
 	}
 
 	allBlocked := true
@@ -130,37 +144,28 @@ func checkHost(host string) HostStatus {
 
 	status.IPv4 = make([]string, 0)
 	status.IPv6 = make([]string, 0)
+	status.UnblockedIPv4 = make([]string, 0)
+	status.UnblockedIPv6 = make([]string, 0)
 
 	// Separate IPv4 and IPv6 addresses
 	for _, ip := range ips {
 		if ip4 := ip.IP.To4(); ip4 != nil {
-			status.IPv4 = append(status.IPv4, ip4.String())
+			ipStr := ip4.String()
+			status.IPv4 = append(status.IPv4, ipStr)
+			if !isIPv4Blocked(ipStr) {
+				status.UnblockedIPv4 = append(status.UnblockedIPv4, ipStr)
+			}
 		} else {
-			status.IPv6 = append(status.IPv6, ip.IP.String())
+			ipStr := ip.IP.String()
+			status.IPv6 = append(status.IPv6, ipStr)
+			if !isIPv6Blocked(ipStr) {
+				status.UnblockedIPv6 = append(status.UnblockedIPv6, ipStr)
+			}
 		}
 	}
 
-	status.IsBlocked = isHostBlocked(status.IPv4, status.IPv6)
+	status.IsBlocked = len(status.UnblockedIPv4) == 0 && len(status.UnblockedIPv6) == 0
 	return status
-}
-
-func isHostBlocked(ipv4 []string, ipv6 []string) bool {
-	// Check IPv4 addresses
-	for _, ip := range ipv4 {
-		if !isIPv4Blocked(ip) {
-			return false
-		}
-	}
-
-	// Check IPv6 addresses
-	for _, ip := range ipv6 {
-		if !isIPv6Blocked(ip) {
-			return false
-		}
-	}
-
-	// If we get here, all IPs were blocking IPs
-	return true
 }
 
 func writeResponse(w http.ResponseWriter, response CheckResponse, allBlocked bool) {
