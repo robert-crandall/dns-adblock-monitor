@@ -39,7 +39,36 @@ go build -o dns-monitor src/main.go
 DNS_HOSTS=ads.example.com,tracker.example.com DNS_RESOLVER=192.168.1.1:53 ./dns-monitor
 ```
 
-## Variables
+### Docker
+
+You can also run this in docker.
+
+#### Using Docker CLI
+
+```bash
+docker run -p 8080:8080 \
+  -e DNS_HOSTS=ads.google.com,adservice.google.com \
+  -e DNS_RESOLVER=1.1.1.1:53 \
+  ghcr.io/robert-crandall/dns-adblock-monitor:latest
+```
+
+#### Using Docker Compose
+
+
+```yaml
+services:
+  dns-monitor:
+    image: ghcr.io/robert-crandall/dns-adblock-monitor:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DNS_HOSTS=ads.google.com,adservice.google.com
+      - DNS_RESOLVER=1.1.1.1:53
+      # Optional environment variables with defaults
+      - BLOCKING_IPV4=0.0.0.0,127.0.0.1
+      - BLOCKING_IPV6=::,::1
+    restart: unless-stopped
+```
 
 ## Variables
 
