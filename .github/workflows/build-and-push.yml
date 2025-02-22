@@ -23,7 +23,6 @@ jobs:
           
       - name: Initialize Go module
         run: |
-          go mod init github.com/robert-crandall/dns-adblock-monitor
           go mod tidy
           
       - name: Run tests
