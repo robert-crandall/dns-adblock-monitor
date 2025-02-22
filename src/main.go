@@ -38,7 +38,7 @@ func main() {
 	// Make the config available to handlers
 	handlers.Initialize(config.Hosts, config.ExpectedIPs...)
 
-	http.HandleFunc("/check", handlers.CheckHandler)
+	http.HandleFunc("/", handlers.CheckHandler)
 	log.Printf("Starting server on :8080 with hosts: %v", config.Hosts)
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
