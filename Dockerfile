@@ -5,10 +5,9 @@ WORKDIR /app
 
 # Copy go mod files first for better cache utilization
 COPY go.mod ./
-COPY go.sum ./
 
-# Download dependencies
-RUN go mod download
+# Copy go.sum if it exists (won't fail if missing)
+COPY go.sum* ./
 
 # Copy source code
 COPY . .
