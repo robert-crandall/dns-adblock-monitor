@@ -1,23 +1,22 @@
 package handlers
 
-// HostStatus represents the resolution status of a single host
+type Config struct {
+	Hosts        []string
+	BlockingIPv4 []string
+	BlockingIPv6 []string
+	Resolver     string
+}
+
 type HostStatus struct {
 	Host      string   `json:"host"`
-	IPs       []string `json:"ips,omitempty"`
+	IPv4      []string `json:"ipv4,omitempty"`
+	IPv6      []string `json:"ipv6,omitempty"`
 	Error     string   `json:"error,omitempty"`
 	IsBlocked bool     `json:"is_blocked"`
 }
 
-// CheckResponse represents the complete check response
 type CheckResponse struct {
 	Status     string       `json:"status"`
 	AllBlocked bool         `json:"all_blocked"`
 	Hosts      []HostStatus `json:"hosts"`
-}
-
-// Config holds the handler configuration
-type Config struct {
-	Hosts       []string
-	BlockingIPs []string
-	Resolver    string
 }
