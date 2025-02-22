@@ -8,9 +8,11 @@ RUN go mod download
 COPY . .
 RUN go build -o /dns-checker ./src
 
-ENV DNS_HOSTS=example.com,google.com
-ENV EXPECTED_IP_RESOLUTIONS=0.0.0.0,127.0.0.1
-
+# Default environment variables
+ENV DNS_HOSTS=ads.google.com,adservice.google.com
+ENV BLOCKING_IPV4=0.0.0.0,127.0.0.1
+ENV BLOCKING_IPV6=::,::1
+ENV DNS_RESOLVER=1.1.1.1:53
 
 EXPOSE 8080
 
