@@ -1,24 +1,26 @@
-# README.md
-
 # DNS Adblock Monitor
 
 DNS Adblock Monitor is a simple Go application that checks the DNS resolution for given hostnames. It responds with a 200 status code if the resolution is blocked, and a 500 status code if it is successful.
 
 This is used in order to validate DNS based adblockers are working correctly.
 
+The motivation for this project came from needing to monitor my guest wifi network for adblocking.
+
 ## Project Structure
 
 ```
 dns-adblock-monitor
 ├── src
-│   ├── main.go          # Entry point of the application
-│   ├── dns
-│   │   └── resolver.go  # DNS resolution logic
+│   ├── main.go         # Entry point of the application
 │   └── handlers
-│       └── check.go     # HTTP request handling
-├── go.mod               # Module definition
-├── go.sum               # Module checksums
-└── README.md            # Project documentation
+│       ├── types.go    # Type definitions
+│       ├── resolver.go # DNS resolver configuration
+│       ├── check.go    # HTTP request handling
+│       └── check_test.go # Unit tests
+├── Dockerfile          # Container build configuration
+├── go.mod             # Module definition
+├── go.sum             # Module checksums
+└── README.md          # Project documentation
 ```
 
 ## Getting Started
