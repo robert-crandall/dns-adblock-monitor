@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"sync"
 )
@@ -19,19 +20,76 @@ func Initialize(hosts []string, blockingIPv4 []string, blockingIPv6 []string, dn
 
 	config.Hosts = hosts
 
-	if len(blockingIPv4) > 0 {
-		config.BlockingIPv4 = blockingIPv4
-	} else {
-		config.BlockingIPv4 = []string{"0.0.0.0", "127.0.0.1"}
+	// Parse IPv4 CIDR blocks
+	config.BlockingIPv4 = make([]net.IPNet, 0)
+	for _, ipv4 := range blockingIPv4 {
+		// Try parsing as CIDR first
+		_, network, err := net.ParseCIDR(ipv4)
+		if err == nil && network != nil {
+			config.BlockingIPv4 = append(config.BlockingIPv4, *network)
+			continue
+		}
+
+		// If not CIDR, treat as single IP
+		ip := net.ParseIP(ipv4)
+		if ip != nil {
+			// Convert single IP to /32 network
+			_, network, _ := net.ParseCIDR(ipv4 + "/32")
+			if network != nil {
+				config.BlockingIPv4 = append(config.BlockingIPv4, *network)
+			}
+		}
 	}
 
-	if len(blockingIPv6) > 0 {
-		config.BlockingIPv6 = blockingIPv6
-	} else {
-		config.BlockingIPv6 = []string{"::", "::1"}
+	// Parse IPv6 CIDR blocks
+	config.BlockingIPv6 = make([]net.IPNet, 0)
+	for _, ipv6 := range blockingIPv6 {
+		// Try parsing as CIDR first
+		_, network, err := net.ParseCIDR(ipv6)
+		if err == nil && network != nil {
+			config.BlockingIPv6 = append(config.BlockingIPv6, *network)
+			continue
+		}
+
+		// If not CIDR, treat as single IP
+		ip := net.ParseIP(ipv6)
+		if ip != nil {
+			_, network, _ := net.ParseCIDR(ipv6 + "/128")
+			if network != nil {
+				config.BlockingIPv6 = append(config.BlockingIPv6, *network)
+			}
+		}
 	}
 
 	initResolver(dnsResolver)
+}
+
+func isIPv4Blocked(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		return false
+	}
+
+	for _, network := range config.BlockingIPv4 {
+		if network.Contains(parsedIP) {
+			return true
+		}
+	}
+	return false
+}
+
+func isIPv6Blocked(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		return false
+	}
+
+	for _, network := range config.BlockingIPv6 {
+		if network.Contains(parsedIP) {
+			return true
+		}
+	}
+	return false
 }
 
 // CheckHandler responds to HTTP requests by checking DNS resolution
@@ -89,28 +147,14 @@ func checkHost(host string) HostStatus {
 func isHostBlocked(ipv4 []string, ipv6 []string) bool {
 	// Check IPv4 addresses
 	for _, ip := range ipv4 {
-		isBlocking := false
-		for _, expectedIP := range config.BlockingIPv4 {
-			if ip == expectedIP {
-				isBlocking = true
-				break
-			}
-		}
-		if !isBlocking {
+		if !isIPv4Blocked(ip) {
 			return false
 		}
 	}
 
 	// Check IPv6 addresses
 	for _, ip := range ipv6 {
-		isBlocking := false
-		for _, expectedIP := range config.BlockingIPv6 {
-			if ip == expectedIP {
-				isBlocking = true
-				break
-			}
-		}
-		if !isBlocking {
+		if !isIPv6Blocked(ip) {
 			return false
 		}
 	}

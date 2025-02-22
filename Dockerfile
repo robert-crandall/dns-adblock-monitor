@@ -25,8 +25,8 @@ COPY --from=builder /dns-checker /dns-checker
 
 # Default environment variables
 ENV DNS_HOSTS=ads.example.com,ads.example.net
-ENV BLOCKING_IPV4=0.0.0.0,127.0.0.1
-ENV BLOCKING_IPV6=::,::1
+ENV BLOCKING_IPV4=0.0.0.0/8,127.0.0.0/8
+ENV BLOCKING_IPV6=::/128,::1/128,fc00::/7
 ENV DNS_RESOLVER=1.1.1.1:53
 
 EXPOSE 8080

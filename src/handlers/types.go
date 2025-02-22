@@ -1,9 +1,11 @@
 package handlers
 
+import "net"
+
 type Config struct {
 	Hosts        []string
-	BlockingIPv4 []string
-	BlockingIPv6 []string
+	BlockingIPv4 []net.IPNet
+	BlockingIPv6 []net.IPNet
 	Resolver     string
 }
 

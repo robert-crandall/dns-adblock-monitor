@@ -65,8 +65,8 @@ services:
       - DNS_HOSTS=ads.google.com,adservice.google.com
       - DNS_RESOLVER=1.1.1.1:53
       # Optional environment variables with defaults
-      - BLOCKING_IPV4=0.0.0.0,127.0.0.1
-      - BLOCKING_IPV6=::,::1
+      - BLOCKING_IPV4=0.0.0.0/8,127.0.0.0/8
+      - BLOCKING_IPV6=::/128,::1/128,fc00::/7
     restart: unless-stopped
 ```
 
@@ -75,8 +75,8 @@ services:
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | DNS_HOSTS | Yes | none | Comma-separated list of hostnames to check for DNS blocking. Check https://paileactivist.github.io/toolz/adblock.html for some example hosts. |
-| BLOCKING_IPV4 | No | `0.0.0.0,127.0.0.1` | Comma-separated list of IPv4 addresses that indicate successful blocking (e.g., `0.0.0.0,127.0.0.1`) |
-| BLOCKING_IPV6 | No | `::,::1` | Comma-separated list of IPv6 addresses that indicate successful blocking |
+| BLOCKING_IPV4 | No | `0.0.0.0,127.0.0.1` | Comma-separated list of IPv4 addresses or CIDR blocks (e.g., `0.0.0.0,127.0.0.0/8`) |
+| BLOCKING_IPV6 | No | `::,::1` | Comma-separated list of IPv6 addresses or CIDR blocks (e.g., `::1/128,fc00::/7`) |
 | DNS_RESOLVER | No | System Default | DNS resolver to use (e.g., `1.1.1.1:53`, `8.8.8.8:53`) |
 
 ## License

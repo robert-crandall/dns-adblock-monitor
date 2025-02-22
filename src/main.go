@@ -27,7 +27,7 @@ func loadConfig() Config {
 	if blockingIPv4Env != "" {
 		blockingIPv4 = strings.Split(blockingIPv4Env, ",")
 	} else {
-		blockingIPv4 = []string{"0.0.0.0", "127.0.0.1"}
+		blockingIPv4 = []string{"0.0.0.0/8", "127.0.0.1/8"}
 	}
 
 	blockingIPv6Env := os.Getenv("BLOCKING_IPV6")
@@ -35,7 +35,7 @@ func loadConfig() Config {
 	if blockingIPv6Env != "" {
 		blockingIPv6 = strings.Split(blockingIPv6Env, ",")
 	} else {
-		blockingIPv6 = []string{"::", "::1"}
+		blockingIPv6 = []string{"::1/128", "::1/128,fc00::/7"}
 	}
 
 	resolverEnv := os.Getenv("DNS_RESOLVER")
