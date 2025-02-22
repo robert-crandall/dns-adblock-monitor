@@ -1,12 +1,28 @@
-FROM golang:1.21-alpine
+# Build stage
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+# Copy go mod files first for better cache utilization
+COPY go.mod ./
+COPY go.sum ./
+
+# Download dependencies
 RUN go mod download
 
+# Copy source code
 COPY . .
-RUN go build -o /dns-checker ./src
+
+# Build the application
+RUN CGO_ENABLED=0 go build -o /dns-checker ./src
+
+# Final stage
+FROM alpine:latest
+
+WORKDIR /
+
+# Copy binary from builder
+COPY --from=builder /dns-checker /dns-checker
 
 # Default environment variables
 ENV DNS_HOSTS=ads.google.com,adservice.google.com
