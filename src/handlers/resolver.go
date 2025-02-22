@@ -6,9 +6,11 @@ import (
 	"time"
 )
 
-var (
-	resolver *net.Resolver
-)
+type Resolver interface {
+	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
+}
+
+var resolver Resolver = net.DefaultResolver
 
 func initResolver(dnsResolver string) {
 	if dnsResolver != "" {

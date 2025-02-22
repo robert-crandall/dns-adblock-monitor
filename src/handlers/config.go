@@ -17,7 +17,10 @@ func Initialize(hosts []string, blockingIPv4 []string, blockingIPv6 []string, dn
 	config.Hosts = hosts
 	parseIPv4Blocks(blockingIPv4)
 	parseIPv6Blocks(blockingIPv6)
-	initResolver(dnsResolver)
+	// Only initialize resolver if a custom address is provided
+	if dnsResolver != "" {
+		initResolver(dnsResolver)
+	}
 }
 
 func parseIPv4Blocks(blockingIPv4 []string) {
