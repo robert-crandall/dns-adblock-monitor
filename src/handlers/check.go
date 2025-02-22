@@ -1,10 +1,26 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"sync"
 )
+
+// HostStatus represents the resolution status of a single host
+type HostStatus struct {
+	Host      string   `json:"host"`
+	IPs       []string `json:"ips,omitempty"`
+	Error     string   `json:"error,omitempty"`
+	IsBlocked bool     `json:"is_blocked"`
+}
+
+// CheckResponse represents the complete check response
+type CheckResponse struct {
+	Status     string       `json:"status"`
+	AllBlocked bool         `json:"all_blocked"`
+	Hosts      []HostStatus `json:"hosts"`
+}
 
 type Config struct {
 	Hosts       []string
@@ -35,14 +51,28 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 	mu.RLock()
 	defer mu.RUnlock()
 
+	response := CheckResponse{
+		Hosts: make([]HostStatus, 0, len(config.Hosts)),
+	}
+
+	allBlocked := true
 	for _, host := range config.Hosts {
+		status := HostStatus{
+			Host: host,
+		}
+
 		ips, err := net.LookupHost(host)
 		if err != nil {
-			// DNS resolution failed (good - it's blocked)
+			status.Error = err.Error()
+			status.IsBlocked = true
+			response.Hosts = append(response.Hosts, status)
 			continue
 		}
 
-		// If we got IPs back, check if they're all blocking IPs
+		status.IPs = ips
+		status.IsBlocked = true
+
+		// Check if all returned IPs are blocking IPs
 		for _, ip := range ips {
 			isBlocking := false
 			for _, blockingIP := range config.BlockingIPs {
@@ -52,12 +82,24 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if !isBlocking {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
+				status.IsBlocked = false
+				allBlocked = false
 			}
 		}
+
+		response.Hosts = append(response.Hosts, status)
 	}
 
-	// If we get here, all hosts were either unresolvable or returned blocking IPs
-	w.WriteHeader(http.StatusOK)
+	response.AllBlocked = allBlocked
+	response.Status = "ok"
+
+	w.Header().Set("Content-Type", "application/json")
+	if !allBlocked {
+		w.WriteHeader(http.StatusInternalServerError)
+		response.Status = "error"
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
