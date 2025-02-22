@@ -11,16 +11,14 @@ The motivation for this project came from needing to monitor my guest wifi netwo
 ```
 dns-adblock-monitor
 ├── src
-│   ├── main.go         # Entry point of the application
+│   ├── main.go           # Entry point of the application
 │   └── handlers
-│       ├── types.go    # Type definitions
-│       ├── resolver.go # DNS resolver configuration
-│       ├── check.go    # HTTP request handling
-│       └── check_test.go # Unit tests
-├── Dockerfile          # Container build configuration
-├── go.mod             # Module definition
-├── go.sum             # Module checksums
-└── README.md          # Project documentation
+│       ├── types.go      # Type definitions
+│       ├── config.go     # Configuration handling
+│       ├── dns.go        # DNS lookup functionality
+│       ├── http.go       # HTTP request handling
+│       ├── ip.go         # IP address validation
+│       └── resolver.go   # DNS resolver configuration
 ```
 
 ## Getting Started
