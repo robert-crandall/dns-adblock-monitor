@@ -13,16 +13,22 @@ var (
 )
 
 // Initialize sets up the handlers package with configuration
-func Initialize(hosts []string, blockingIPs []string, dnsResolver string) {
+func Initialize(hosts []string, blockingIPv4 []string, blockingIPv6 []string, dnsResolver string) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	config.Hosts = hosts
 
-	if len(blockingIPs) > 0 {
-		config.BlockingIPs = blockingIPs
+	if len(blockingIPv4) > 0 {
+		config.BlockingIPv4 = blockingIPv4
 	} else {
-		config.BlockingIPs = []string{"0.0.0.0", "127.0.0.1"}
+		config.BlockingIPv4 = []string{"0.0.0.0", "127.0.0.1"}
+	}
+
+	if len(blockingIPv6) > 0 {
+		config.BlockingIPv6 = blockingIPv6
+	} else {
+		config.BlockingIPv6 = []string{"::", "::1"}
 	}
 
 	initResolver(dnsResolver)
@@ -57,23 +63,34 @@ func checkHost(host string) HostStatus {
 		Host: host,
 	}
 
-	ips, err := resolver.LookupHost(context.Background(), host)
+	ips, err := resolver.LookupIPAddr(context.Background(), host)
 	if err != nil {
 		status.Error = err.Error()
 		status.IsBlocked = true
 		return status
 	}
 
-	status.IPs = ips
-	status.IsBlocked = isHostBlocked(ips)
+	status.IPv4 = make([]string, 0)
+	status.IPv6 = make([]string, 0)
 
+	// Separate IPv4 and IPv6 addresses
+	for _, ip := range ips {
+		if ip4 := ip.IP.To4(); ip4 != nil {
+			status.IPv4 = append(status.IPv4, ip4.String())
+		} else {
+			status.IPv6 = append(status.IPv6, ip.IP.String())
+		}
+	}
+
+	status.IsBlocked = isHostBlocked(status.IPv4, status.IPv6)
 	return status
 }
 
-func isHostBlocked(ips []string) bool {
-	for _, ip := range ips {
+func isHostBlocked(ipv4 []string, ipv6 []string) bool {
+	// Check IPv4 addresses
+	for _, ip := range ipv4 {
 		isBlocking := false
-		for _, expectedIP := range config.BlockingIPs {
+		for _, expectedIP := range config.BlockingIPv4 {
 			if ip == expectedIP {
 				isBlocking = true
 				break
@@ -83,6 +100,22 @@ func isHostBlocked(ips []string) bool {
 			return false
 		}
 	}
+
+	// Check IPv6 addresses
+	for _, ip := range ipv6 {
+		isBlocking := false
+		for _, expectedIP := range config.BlockingIPv6 {
+			if ip == expectedIP {
+				isBlocking = true
+				break
+			}
+		}
+		if !isBlocking {
+			return false
+		}
+	}
+
+	// If we get here, all IPs were blocking IPs
 	return true
 }
 
